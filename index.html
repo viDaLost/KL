@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Читалка</title>
+  <!-- Шрифты -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Literata:opsz,wght@7..72,400;7..72,600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Telegram WebApp SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f1115; --bg-soft:#141824; --card:#171b28; --text:#e6e8ef; --muted:#a5adbf;
+      --accent:#7aa2f7; --accent-2:#a3be8c; --danger:#e46876; --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:18px; --gap:14px; --reader-max:800px;
+    }
+    [data-theme="light"]{
+      --bg:#f7f7fb; --bg-soft:#f1f3f8; --card:#fff; --text:#151821; --muted:#626b7a;
+      --accent:#3b82f6; --accent-2:#16a34a; --danger:#dc2626; --shadow:0 10px 30px rgba(15,17,21,.08);
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .appbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:var(--gap);padding:12px 14px;
+      background:linear-gradient(180deg,rgba(0,0,0,.22),rgba(0,0,0,0)),var(--bg);backdrop-filter:saturate(160%) blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.06)}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+    .brand .logo{width:28px;height:28px;border-radius:8px;background:conic-gradient(from 220deg,var(--accent),var(--accent-2));box-shadow:var(--shadow)}
+    .toolbar{margin-left:auto;display:flex;align-items:center;gap:10px}
+    .btn{appearance:none;border:1px solid rgba(255,255,255,.1);padding:10px 12px;border-radius:12px;background:var(--card);color:var(--text);font-weight:600;cursor:pointer;box-shadow:var(--shadow)}
+    .btn:hover{filter:brightness(1.05)} .btn.ghost{background:transparent;border-color:rgba(255,255,255,.12)} .btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+    .container{padding:16px;max-width:1200px;margin:0 auto}
+    .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+    .input{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;flex:1 1 280px;min-width:180px;box-shadow:var(--shadow)}
+    .input input{background:transparent;border:0;outline:0;color:var(--text);width:100%;font-size:14px}
+    .pill{padding:8px 10px;border-radius:999px;background:var(--card);border:1px solid rgba(255,255,255,.1);cursor:pointer;font-weight:600;box-shadow:var(--shadow)}
+    .pill.active{background:var(--accent);color:#fff;border-color:transparent}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+    .cover{height:180px;border-radius:14px;background:linear-gradient(120deg,rgba(122,162,247,.25),rgba(163,190,140,.25));
+      display:flex;align-items:flex-end;justify-content:flex-start;padding:12px;font-weight:800;font-size:18px;letter-spacing:.2px}
+    .meta{color:var(--muted);font-size:12px}
+    .card .actions{display:flex;gap:10px;margin-top:6px}
+    .reader-wrap{display:none}.reader-wrap.active{display:block}
+    .reader-top{position:sticky;top:0;background:var(--bg-soft);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;padding:10px;z-index:30}
+    .reader{max-width:var(--reader-max);margin:0 auto;padding:12px 14px 80px;font-size:var(--fs,18px);line-height:var(--lh,1.6);
+      font-family:var(--ff,"Literata",Georgia,"Times New Roman",serif)}
+    .reader p{margin:0 0 1em}
+    .reader h1,.reader h2,.reader h3{font-family:"Literata",Georgia,"Times New Roman",serif;margin:1.2em 0 .6em}
+    .toc{position:sticky;top:54px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;box-shadow:var(--shadow);max-height:55vh;overflow:auto;font-size:14px}
+    .layout{display:grid;grid-template-columns:1fr;gap:16px}
+    @media (min-width:980px){.layout{grid-template-columns:260px 1fr}}
+    .panel{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(255,255,255,.12);
+      border-radius:16px;padding:10px;box-shadow:var(--shadow);z-index:40;width:min(680px,calc(100% - 24px))}
+    .panel.active{display:block} .panel .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+    .panel select,.panel input[type="range"]{width:160px;background:transparent;color:var(--text)}
+    .hint{color:var(--muted);font-size:12px}
+    .empty{text-align:center;color:var(--muted);padding:40px 10px;border:1px dashed rgba(255,255,255,.15);border-radius:14px;background:rgba(0,0,0,.05)}
+    a{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body data-theme="dark">
+  <header class="appbar">
+    <div class="brand"><div class="logo"></div> Читалка</div>
+    <div class="toolbar">
+      <button class="btn ghost" id="btnTheme" title="Тема">Тема</button>
+      <button class="btn ghost" id="btnSettings" title="Настройки чтения">Aa</button>
+      <button class="btn ghost" id="btnBack" style="display:none">← Библиотека</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Библиотека -->
+    <section id="libraryView">
+      <div class="filters">
+        <div class="input"><span>🔎</span><input id="search" placeholder="Поиск по названию…" /></div>
+        <button class="pill active" data-filter="all">Все</button>
+        <button class="pill" data-filter="reading">Читаю</button>
+        <button class="pill" data-filter="completed">Прочитано</button>
+        <span class="hint" id="whoami"></span>
+      </div>
+      <div id="booksGrid" class="grid"></div>
+      <div id="emptyLibrary" class="empty" style="display:none">
+        В папке <code>books/</code> пока пусто. Загрузите <code>.txt</code> или <code>.md</code> — и они появятся здесь автоматически.
+      </div>
+    </section>
+
+    <!-- Ридер -->
+    <section id="readerView" class="reader-wrap">
+      <div class="reader-top">
+        <button class="btn ghost" id="btnClose">← Назад</button>
+        <div style="font-weight:700" id="bookTitle">Название книги</div>
+        <div class="toolbar" style="margin-left:auto">
+          <button class="btn" id="btnMarkReading">Пометить «Читаю»</button>
+          <button class="btn" id="btnMarkDone">Я закончил(а)</button>
+          <button class="btn ghost" id="btnToc">Содержание</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <aside id="tocPanel" class="toc" style="display:none"></aside>
+        <article id="reader" class="reader"><p>Загрузка…</p></article>
+      </div>
+    </section>
+
+    <!-- Панель настроек -->
+    <div id="settingsPanel" class="panel">
+      <div class="row">
+        <label>Шрифт:</label>
+        <select id="fontFamily">
+          <option value="Literata, Georgia, 'Times New Roman', serif">Сериф (Literata)</option>
+          <option value="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif">Без засечек (Inter)</option>
+          <option value="'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">Моно (Fira Code)</option>
+        </select>
+        <label>Размер:</label>
+        <input id="fontSize" type="range" min="14" max="28" step="1" />
+        <label>Интерлиньяж:</label>
+        <input id="lineHeight" type="range" min="1.2" max="2.0" step="0.05" />
+        <label>Макс. ширина:</label>
+        <input id="pageWidth" type="range" min="620" max="980" step="10" />
+      </div>
+      <div class="row">
+        <span class="hint">Настройки сохраняются в вашем профиле (по Telegram ID или гостевом, если открыто вне Telegram).</span>
+      </div>
+    </div>
+  </main>
+
+<script>
+/* ========= КОНФИГ ПОД ТВОЙ РЕПОЗИТОРИЙ ========= */
+const CONFIG = {
+  GITHUB_OWNER: 'viDaLost',
+  GITHUB_REPO:  'KL',
+  BRANCH:       'main',
+  BOOKS_DIR:    'books'
+};
+
+/* ========= Telegram / Профиль ========= */
+let TG = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
+let userId = 'guest';
+let userLabel = 'Гостевой режим';
+try{
+  if (TG && TG.initDataUnsafe && TG.initDataUnsafe.user){
+    userId = String(TG.initDataUnsafe.user.id);
+    const name = [TG.initDataUnsafe.user.first_name, TG.initDataUnsafe.user.last_name].filter(Boolean).join(' ');
+    userLabel = `ID: ${userId}${name ? ' · ' + name : ''}`;
+    TG.ready(); TG.expand && TG.expand();
+  } else {
+    const urlId = new URLSearchParams(location.search).get('uid');
+    if (urlId) { userId = `uid-${urlId}`; userLabel = `UID (url): ${urlId}`; }
+  }
+}catch(e){}
+document.getElementById('whoami').textContent = userLabel;
+
+/* ========= Хранилище ========= */
+const STORAGE_KEY = `tgReader::${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}::${userId}`;
+const defaults = {
+  theme:'dark',
+  settings:{ ff:"Literata, Georgia, 'Times New Roman', serif", fs:18, lh:1.6, width:800 },
+  shelves:{ reading:{}, completed:{} },
+  progress:{}
+};
+let db = load();
+function load(){ try{ return Object.assign(structuredClone(defaults), JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')); }catch(e){ return structuredClone(defaults);} }
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+/* ========= Тема/настройки ========= */
+const $body=document.body;
+function applyTheme(){ $body.setAttribute('data-theme', db.theme==='dark'?'dark':'light'); }
+function applyReaderSettings(){
+  const $r=document.getElementById('reader');
+  $r.style.setProperty('--ff', db.settings.ff);
+  $r.style.setProperty('--fs', db.settings.fs+'px');
+  $r.style.setProperty('--lh', db.settings.lh);
+  document.documentElement.style.setProperty('--reader-max', db.settings.width+'px');
+}
+applyTheme(); applyReaderSettings();
+
+document.getElementById('btnTheme').onclick=()=>{ db.theme=db.theme==='dark'?'light':'dark'; save(); applyTheme(); };
+const fontFamily=document.getElementById('fontFamily');
+const fontSize=document.getElementById('fontSize');
+const lineHeight=document.getElementById('lineHeight');
+const pageWidth=document.getElementById('pageWidth');
+fontFamily.value=db.settings.ff; fontSize.value=db.settings.fs; lineHeight.value=db.settings.lh; pageWidth.value=db.settings.width;
+fontFamily.oninput=e=>{ db.settings.ff=e.target.value; save(); applyReaderSettings(); };
+fontSize.oninput=e=>{ db.settings.fs=+e.target.value; save(); applyReaderSettings(); };
+lineHeight.oninput=e=>{ db.settings.lh=+e.target.value; save(); applyReaderSettings(); };
+pageWidth.oninput=e=>{ db.settings.width=+e.target.value; save(); applyReaderSettings(); };
+document.getElementById('btnSettings').onclick=()=>document.getElementById('settingsPanel').classList.toggle('active');
+
+/* ========= GitHub API ========= */
+async function fetchRepoTree(){
+  const url=`https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/git/trees/${CONFIG.BRANCH}?recursive=1`;
+  const res=await fetch(url,{headers:{'Accept':'application/vnd.github+json'}});
+  if(!res.ok) throw new Error('GitHub API error: '+res.status);
+  return res.json();
+}
+function isBookFile(path){ return path.startsWith(CONFIG.BOOKS_DIR + '/') && /\.(txt|md)$/i.test(path); }
+function rawUrlFor(path){
+  const enc=path.split('/').map(encodeURIComponent).join('/');
+  return `https://raw.githubusercontent.com/${CONFIG.GITHUB_OWNER}/${CONFIG_GITHUB_REPO ?? CONFIG.GITHUB_REPO}/${CONFIG.BRANCH}/${enc}`;
+}
+// NOTE: поддержка старого кода, если кто-то заменит переменные
+function baseName(path){ const p=path.split('/').pop()||path; return p.replace(/\.[^.]+$/,''); }
+function humanize(name){
+  return decodeURIComponent(name).replace(/[_\-]+/g,' ').replace(/\s+/g,' ').replace(/\b([a-zа-яё])/gi,s=>s.toUpperCase()).trim();
+}
+function groupBooks(tree){
+  const files = tree.tree.filter(n=>n.type==='blob' && isBookFile(n.path)).map(n=>({path:n.path, raw: rawUrlFor(n.path)}));
+  const byFolder=new Map(); const singles=[];
+  for(const f of files){
+    const parts=f.path.split('/');
+    if(parts.length>=3){ const folder=parts[1]; if(!byFolder.has(folder)) byFolder.set(folder,[]); byFolder.get(folder).push(f); }
+    else singles.push(f);
+  }
+  const books=[];
+  for(const [folder,arr] of byFolder){
+    arr.sort((a,b)=>a.path.localeCompare(b.path,undefined,{numeric:true,sensitivity:'base'}));
+    books.push({ id:`folder:${folder}`, title:humanize(folder), type:'multi',
+      chapters:arr.map(f=>({ key:f.path, title:humanize(baseName(f.path)), raw:f.raw })) });
+  }
+  for(const f of singles){
+    books.push({ id:`file:${f.path}`, title:humanize(baseName(f.path)), type:'single', file:{ key:f.path, raw:f.raw } });
+  }
+  books.sort((a,b)=>a.title.localeCompare(b.title,undefined,{sensitivity:'base'}));
+  return books;
+}
+
+/* ========= UI библиотеки ========= */
+const $grid=document.getElementById('booksGrid');
+const $empty=document.getElementById('emptyLibrary');
+const $search=document.getElementById('search');
+let filter='all'; let allBooks=[];
+function badgeFor(bookId){
+  if(db.shelves.completed[bookId]) return '✅ Прочитано';
+  if(db.shelves.reading[bookId]) return '📖 Читаю';
+  const prog=db.progress[bookId]?.percent;
+  if(prog>1) return `📍 ${prog}%`;
+  return '';
+}
+function renderGrid(){
+  const q=($search.value||'').toLowerCase().trim();
+  const list=allBooks
+    .filter(b=>!q || b.title.toLowerCase().includes(q))
+    .filter(b=>{
+      if(filter==='all') return true;
+      if(filter==='reading') return !!db.shelves.reading[b.id];
+      if(filter==='completed') return !!db.shelves.completed[b.id];
+      return true;
+    });
+  $grid.innerHTML=''; if(!list.length){ $empty.style.display='block'; return; } $empty.style.display='none';
+  for(const b of list){
+    const $card=document.createElement('div'); $card.className='card';
+    const $cover=document.createElement('div'); $cover.className='cover'; $cover.textContent=b.title; $card.appendChild($cover);
+    const $meta=document.createElement('div'); $meta.className='meta'; $meta.textContent=badgeFor(b.id)||'Готово к чтению'; $card.appendChild($meta);
+    const $actions=document.createElement('div'); $actions.className='actions';
+    const $read=document.createElement('button'); $read.className='btn primary'; $read.textContent='Читать'; $read.onclick=()=>openBook(b);
+    const $mark=document.createElement('button'); $mark.className='btn';
+    $mark.textContent=db.shelves.reading[b.id]?'Убрать из «Читаю»':'В «Читаю»';
+    $mark.onclick=()=>{ if(db.shelves.reading[b.id]) delete db.shelves.reading[b.id]; else { db.shelves.reading[b.id]=Date.now(); delete db.shelves.completed[b.id]; } save(); renderGrid(); };
+    $actions.appendChild($read); $actions.appendChild($mark); $card.appendChild($actions); $grid.appendChild($card);
+  }
+}
+document.querySelectorAll('.pill').forEach(el=>{ el.onclick=()=>{ document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active')); el.classList.add('active'); filter=el.getAttribute('data-filter'); renderGrid(); }; });
+$search.oninput=()=>renderGrid();
+
+/* ========= Ридер / главы ========= */
+const $libraryView=document.getElementById('libraryView');
+const $readerView=document.getElementById('readerView');
+const $reader=document.getElementById('reader');
+const $bookTitle=document.getElementById('bookTitle');
+const $btnBack=document.getElementById('btnBack');
+const $btnClose=document.getElementById('btnClose');
+const $btnToc=document.getElementById('btnToc');
+const $tocPanel=document.getElementById('tocPanel');
+const $btnMarkReading=document.getElementById('btnMarkReading');
+const $btnMarkDone=document.getElementById('btnMarkDone');
+let currentBook=null, currentChapterKey=null, observer=null, tocAnchors=[];
+
+function showReader(on){ if(on){ $libraryView.style.display='none'; $readerView.classList.add('active'); $btnBack.style.display=''; } else { $libraryView.style.display=''; $readerView.classList.remove('active'); $btnBack.style.display='none'; } }
+$btnBack.onclick=$btnClose.onclick=()=>showReader(false);
+$btnToc.onclick=()=>{ const on=$tocPanel.style.display!=='none'; $tocPanel.style.display=on?'none':''; };
+$btnMarkReading.onclick=()=>{ if(!currentBook) return; delete db.shelves.completed[currentBook.id]; db.shelves.reading[currentBook.id]=Date.now(); save(); renderGrid(); };
+$btnMarkDone.onclick=()=>{ if(!currentBook) return; delete db.shelves.reading[currentBook.id]; db.shelves.completed[currentBook.id]=Date.now(); save(); renderGrid(); };
+
+function setBookTitle(title){ $bookTitle.textContent=title; document.title=title+' — Читалка'; }
+function saveProgress(percent){
+  if(!currentBook) return;
+  db.progress[currentBook.id]=db.progress[currentBook.id]||{};
+  const slot=db.progress[currentBook.id];
+  slot.percent=Math.max(0,Math.min(100,Math.round(percent))); slot.ts=Date.now();
+  if(currentChapterKey) slot.chapterKey=currentChapterKey; save();
+}
+function attachScrollSaver(){
+  if(observer){ observer.disconnect(); observer=null; }
+  let ticking=false;
+  function onScroll(){
+    if(ticking) return;
+    requestAnimationFrame(()=>{
+      const el=document.documentElement; const total=el.scrollHeight-el.clientHeight;
+      const p=total>0?(el.scrollTop/total)*100:0; saveProgress(p); ticking=false;
+    }); ticking=true;
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  observer={disconnect(){ document.removeEventListener('scroll', onScroll); }};
+}
+function restoreScroll(){
+  const prog=db.progress[currentBook.id]; if(!prog) return;
+  setTimeout(()=>{
+    if(prog.chapterKey && currentChapterKey && prog.chapterKey!==currentChapterKey) return;
+    const el=document.documentElement; const total=el.scrollHeight-el.clientHeight; const y=total*(prog.percent/100);
+    el.scrollTo({top:y,behavior:'instant'});
+  },50);
+}
+
+async function openBook(book){
+  currentBook=book; showReader(true); setBookTitle(book.title);
+  $tocPanel.innerHTML=''; $reader.innerHTML='<p>Загрузка…</p>';
+  $btnMarkReading.textContent=db.shelves.reading[book.id]?'В «Читаю» ✓':'В «Читаю»';
+  $btnMarkDone.textContent=db.shelves.completed[book.id]?'Прочитано ✓':'Я закончил(а)';
+
+  if(book.type==='multi'){
+    const saved=db.progress[book.id]?.chapterKey;
+    let ch=book.chapters[0]; if(saved){ const found=book.chapters.find(c=>c.key===saved); if(found) ch=found; }
+    await openChapter(ch, book); renderChapterList(book, ch.key);
+  } else {
+    // ОДИН ФАЙЛ → виртуальные главы
+    const txt=await fetchText(book.file.raw); const ext=fileExt(book.file.key);
+    const vchapters=splitIntoChapters(txt, ext); // [{title, html, key}]
+    book.__virtual=vchapters.map(v=>({ key:`${book.file.key}::${v.key}`, title:v.title, rawHtml:v.html }));
+    const savedKey=db.progress[book.id]?.chapterKey;
+    let current=book.__virtual[0]; if(savedKey){ const f=book.__virtual.find(c=>c.key===savedKey); if(f) current=f; }
+    await renderVirtualChapter(book, current);
+    renderChapterList({ title:book.title, chapters:book.__virtual.map(c=>({key:c.key,title:c.title})) }, current.key);
+  }
+  applyReaderSettings();
+}
+
+function renderChapterList(book, activeKey){
+  let html=`<div style="font-weight:700;margin-bottom:6px">${book.title}</div><div class="hint" style="margin-bottom:8px">Главы</div>`;
+  for(const ch of book.chapters){
+    const isActive=ch.key===activeKey;
+    html+=`<div style="margin:6px 0"><a href="#" data-ch="${encodeURIComponent(ch.key)}" style="${isActive?'font-weight:700;':''}">${ch.title}</a></div>`;
+  }
+  $tocPanel.innerHTML=html; $tocPanel.style.display='';
+  $tocPanel.querySelectorAll('a[data-ch]').forEach(a=>{
+    a.onclick=async e=>{ e.preventDefault(); const key=decodeURIComponent(a.getAttribute('data-ch'));
+      if(currentBook.type==='multi'){ const ch=currentBook.chapters.find(x=>x.key===key); if(ch){ await openChapter(ch,currentBook); renderChapterList(currentBook,ch.key);} }
+      else { const ch=currentBook.__virtual.find(x=>x.key===key); if(ch){ await renderVirtualChapter(currentBook,ch); renderChapterList({title:currentBook.title, chapters:currentBook.__virtual.map(c=>({key:c.key,title:c.title}))}, ch.key);} }
+    };
+  });
+}
+
+async function openChapter(chapter, book){
+  currentChapterKey=chapter.key; setBookTitle(`${book.title} — ${chapter.title}`); $reader.innerHTML='<p>Загрузка…</p>';
+  const txt=await fetchText(chapter.raw); const html=renderTextToHtmlChunk(txt, fileExt(chapter.key));
+  $reader.innerHTML=html; buildTocFromReader(); attachScrollSaver(); delete db.shelves.completed[book.id]; db.shelves.reading[book.id]=Date.now(); save(); restoreScroll();
+}
+async function renderVirtualChapter(book, chapter){
+  currentChapterKey=chapter.key; setBookTitle(`${book.title} — ${chapter.title}`); $reader.innerHTML=chapter.rawHtml;
+  buildTocFromReader(); attachScrollSaver(); delete db.shelves.completed[book.id]; db.shelves.reading[book.id]=Date.now(); save(); restoreScroll();
+}
+
+async function fetchText(url){ const res=await fetch(url); if(!res.ok) throw new Error('Не удалось загрузить книгу'); return res.text(); }
+function fileExt(path){ const m=path.match(/\.([^.]+)$/); return m?m[1].toLowerCase():''; }
+function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ========= Автоделение на главы ========= */
+const CHAPTER_WORDS=/^(?:глава|часть|книга|chapter|part|book)\b/i;
+function normalizeChapterTitle(line){ return line.replace(/\s+/g,' ').replace(/\s+\.+$/,'').trim(); }
+
+function splitIntoChapters(txt, ext){
+  const isMD=ext==='md'; const lines=txt.replace(/\r/g,'').split('\n');
+  let indices=[];
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i].trim(); if(!line) continue;
+    const mdHead=isMD && line.match(/^(#{1,3})\s+(.*)$/);
+    if(mdHead){
+      const lvl=mdHead[1].length; const text=mdHead[2].trim();
+      if(CHAPTER_WORDS.test(text) || lvl<=2){ indices.push({i, title:normalizeChapterTitle(text)}); }
+      continue;
+    }
+    const m=line.match(/^(?:ГЛАВА|Глава|ЧАСТЬ|Часть|КНИГА|Книга|CHAPTER|Chapter|PART|Part|BOOK|Book)\s+([IVXLCDM\d]+)?[.:\-\s]?(.*)$/i);
+    if(m){ const num=m[1]||''; const rest=m[2]||''; const label=[m[0].split(/\s+/)[0],num,rest].filter(Boolean).join(' ').trim(); indices.push({i,title:normalizeChapterTitle(label)}); }
+  }
+  if(indices.length===0){
+    const words=txt.split(/\s+/).length; const target=Math.max(3000,Math.min(6000,Math.floor(words/8)));
+    let count=0; for(let i=0;i<lines.length;i++){
+      count += (lines[i].match(/\s+/g)||[]).length + 1;
+      const breakable=!lines[i].trim();
+      if(count>=target && breakable){ indices.push({i, title:`Глава ${indices.length+1}`}); count=0; }
+    }
+    if(indices.length===0 && words>6000){
+      const thirds=Math.floor(lines.length/3);
+      indices=[{i:0,title:'Глава 1'},{i:thirds,title:'Глава 2'},{i:thirds*2,title:'Глава 3'}];
+    }
+    if(indices[0]?.i!==0) indices.unshift({i:0,title:'Начало'});
+  } else {
+    if(indices[0].i!==0) indices.unshift({i:0,title:'Вступление'});
+  }
+  const chunks=[];
+  for(let c=0;c<indices.length;c++){
+    const from=indices[c].i; const to=(indices[c+1]?.i ?? lines.length);
+    const slice=lines.slice(from,to).join('\n');
+    chunks.push({ title:indices[c].title||`Глава ${c+1}`, html:renderTextToHtmlChunk(slice, ext), key:`ch_${String(c).padStart(3,'0')}` });
+  }
+  return chunks;
+}
+function renderTextToHtmlChunk(txt, ext){
+  if(ext==='md'){ marked.setOptions({mangle:false,headerIds:true,breaks:true,gfm:true}); return marked.parse(txt); }
+  const out=[]; for(const raw of txt.split('\n')){
+    const line=raw.trim();
+    if(!line){ out.push('<p>&nbsp;</p>'); continue; }
+    if(/^(Глава|Chapter|CHAPTER|Часть|Part|BOOK|Книга)\b/i.test(line)){ out.push(`<h2>${escapeHtml(line)}</h2>`); }
+    else { out.push(`<p>${escapeHtml(line)}</p>`); }
+  } return out.join('\n');
+}
+
+/* ========= TOC из заголовков ========= */
+function buildTocFromReader(){
+  const hs=$reader.querySelectorAll('h1,h2,h3'); tocAnchors=Array.from(hs);
+  if(!tocAnchors.length){ $tocPanel.style.display='none'; return; }
+  let html=`<div style="font-weight:700;margin-bottom:6px">Содержание</div>`;
+  tocAnchors.forEach((h,idx)=>{ if(!h.id) h.id='h_'+idx; const lvl=h.tagName==='H1'?0:(h.tagName==='H2'?1:2);
+    html+=`<div style="margin:6px 0; padding-left:${lvl*10}px"><a href="#${h.id}" data-anchor="${h.id}">${escapeHtml(h.textContent||'')}</a></div>`;
+  });
+  $tocPanel.innerHTML=html; $tocPanel.style.display='';
+  $tocPanel.querySelectorAll('a[data-anchor]').forEach(a=>{ a.onclick=e=>{ e.preventDefault(); const id=a.getAttribute('data-anchor'); const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }; });
+}
+
+/* ========= Навбар/ESC ========= */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ const p=document.getElementById('settingsPanel'); if(p.classList.contains('active')) p.classList.remove('active'); else showReader(false); }
+});
+
+/* ========= Инициализация ========= */
+async function init(){
+  try{
+    const tree=await fetchRepoTree(); allBooks=groupBooks(tree);
+    if(!allBooks.length) $empty.style.display='block'; renderGrid();
+    const qp=new URLSearchParams(location.search); const want=qp.get('book');
+    if(want){
+      const idFile=`file:${CONFIG.BOOKS_DIR}/${want}`; const idFolder=`folder:${want}`;
+      let b=allBooks.find(x=>x.id===idFile) || allBooks.find(x=>x.id===idFolder);
+      if(!b) b=allBooks.find(x=>x.title.toLowerCase()===decodeURIComponent(want).toLowerCase());
+      if(b) openBook(b);
+    }
+  }catch(e){
+    console.error(e);
+    $grid.innerHTML=`<div class="empty">Не удалось получить список из GitHub. Проверьте настройки и доступность репозитория.</div>`;
+  }
+}
+init();
+</script>
+</body>
+</html>
