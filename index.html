@@ -194,10 +194,9 @@ async function fetchRepoTree(){
   if(!res.ok) throw new Error('GitHub API error: '+res.status);
   return res.json();
 }
-function isBookFile(path){ return path.startsWith(CONFIG.BOOKS_DIR + '/') && /\.(txt|md)$/i.test(path); }
 function rawUrlFor(path){
-  const enc=path.split('/').map(encodeURIComponent).join('/');
-  return `https://raw.githubusercontent.com/${CONFIG.GITHUB_OWNER}/${CONFIG_GITHUB_REPO ?? CONFIG.GITHUB_REPO}/${CONFIG.BRANCH}/${enc}`;
+  const enc = path.split('/').map(encodeURIComponent).join('/');
+  return `https://raw.githubusercontent.com/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/${CONFIG.BRANCH}/${enc}`;
 }
 // NOTE: поддержка старого кода, если кто-то заменит переменные
 function baseName(path){ const p=path.split('/').pop()||path; return p.replace(/\.[^.]+$/,''); }
