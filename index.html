@@ -14,7 +14,7 @@
     :root{
       --bg:#0f1115; --bg-soft:#141824; --card:#171b28; --text:#e6e8ef; --muted:#a5adbf;
       --accent:#7aa2f7; --accent-2:#a3be8c; --danger:#e46876; --shadow:0 10px 30px rgba(0,0,0,.35);
-      --radius:18px; --gap:14px; --reader-max:800px;
+      --radius:18px; --gap:14px; --reader-max:800px; --ring: 0 0 0 2px rgba(122,162,247,.35);
     }
     [data-theme="light"]{
       --bg:#f7f7fb; --bg-soft:#f1f3f8; --card:#fff; --text:#151821; --muted:#626b7a;
@@ -29,8 +29,9 @@
     .toolbar{margin-left:auto;display:flex;align-items:center;gap:10px}
     .btn{appearance:none;border:1px solid rgba(255,255,255,.1);padding:10px 12px;border-radius:12px;background:var(--card);color:var(--text);font-weight:600;cursor:pointer;box-shadow:var(--shadow)}
     .btn:hover{filter:brightness(1.05)} .btn.ghost{background:transparent;border-color:rgba(255,255,255,.12)} .btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+    .btn:focus-visible{outline:none; box-shadow: var(--ring)}
     .container{padding:16px;max-width:1200px;margin:0 auto}
-    .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+    .filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center}
     .input{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 10px;flex:1 1 280px;min-width:180px;box-shadow:var(--shadow)}
     .input input{background:transparent;border:0;outline:0;color:var(--text);width:100%;font-size:14px}
     .pill{padding:8px 10px;border-radius:999px;background:var(--card);border:1px solid rgba(255,255,255,.1);cursor:pointer;font-weight:600;box-shadow:var(--shadow)}
@@ -43,28 +44,35 @@
     .card .actions{display:flex;gap:10px;margin-top:6px}
     .reader-wrap{display:none}.reader-wrap.active{display:block}
     .reader-top{position:sticky;top:0;background:var(--bg-soft);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;padding:10px;z-index:30}
-    .reader{max-width:var(--reader-max);margin:0 auto;padding:12px 14px 80px;font-size:var(--fs,18px);line-height:var(--lh,1.6);
-      font-family:var(--ff,"Literata",Georgia,"Times New Roman",serif)}
+    .reader{max-width:var(--reader-max);margin:0 auto;padding:12px 14px 120px;font-size:var(--fs,18px);line-height:var(--lh,1.6);
+      font-family:var(--ff,"Literata",Georgia,"Times New Roman",serif); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;}
     .reader p{margin:0 0 1em}
     .reader h1,.reader h2,.reader h3{font-family:"Literata",Georgia,"Times New Roman",serif;margin:1.2em 0 .6em}
     .toc{position:sticky;top:54px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px;box-shadow:var(--shadow);max-height:55vh;overflow:auto;font-size:14px}
     .layout{display:grid;grid-template-columns:1fr;gap:16px}
-    @media (min-width:980px){.layout{grid-template-columns:260px 1fr}}
+    @media (min-width:1100px){.layout{grid-template-columns:260px 1fr}}
     .panel{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid rgba(255,255,255,.12);
-      border-radius:16px;padding:10px;box-shadow:var(--shadow);z-index:40;width:min(680px,calc(100% - 24px))}
+      border-radius:16px;padding:10px;box-shadow:var(--shadow);z-index:40;width:min(820px,calc(100% - 24px))}
     .panel.active{display:block} .panel .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
-    .panel select,.panel input[type="range"]{width:160px;background:transparent;color:var(--text)}
+    .panel select,.panel input[type="range"], .panel input[type="number"]{width:160px;background:transparent;color:var(--text)}
     .hint{color:var(--muted);font-size:12px}
     .empty{text-align:center;color:var(--muted);padding:40px 10px;border:1px dashed rgba(255,255,255,.15);border-radius:14px;background:rgba(0,0,0,.05)}
     a{color:var(--accent);text-decoration:none}
+    .kbd{font-family:"Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; padding:2px 6px; border-radius:8px; border:1px solid rgba(255,255,255,.15); background:var(--bg-soft)}
+    .progressbar{position:fixed;left:0;top:0;height:3px;background:var(--accent);width:0%;z-index:50}
+    .reading-footer{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.25);backdrop-filter: blur(6px); padding:6px 10px;border-radius:12px;font-size:12px;border:1px solid rgba(255,255,255,.15);display:none}
+    .reading-footer.show{display:block}
+    mark.search{background:rgba(122,162,247,.35); padding:0 2px; border-radius:4px}
   </style>
 </head>
 <body data-theme="dark">
+  <div class="progressbar" id="progressbar"></div>
   <header class="appbar">
     <div class="brand"><div class="logo"></div> Читалка</div>
     <div class="toolbar">
       <button class="btn ghost" id="btnTheme" title="Тема">Тема</button>
       <button class="btn ghost" id="btnSettings" title="Настройки чтения">Aa</button>
+      <button class="btn ghost" id="btnSync" title="Синхронизировать">↻</button>
       <button class="btn ghost" id="btnBack" style="display:none">← Библиотека</button>
     </div>
   </header>
@@ -83,6 +91,9 @@
       <div id="emptyLibrary" class="empty" style="display:none">
         В папке <code>books/</code> пока пусто. Загрузите <code>.txt</code> или <code>.md</code> — и они появятся здесь автоматически.
       </div>
+      <div class="hint" style="margin-top:10px">
+        Подсказки: нажмите <span class="kbd">T</span> для смены темы, <span class="kbd">/</span> чтобы сфокусировать поиск.
+      </div>
     </section>
 
     <!-- Ридер -->
@@ -94,6 +105,7 @@
           <button class="btn" id="btnMarkReading">Пометить «Читаю»</button>
           <button class="btn" id="btnMarkDone">Я закончил(а)</button>
           <button class="btn ghost" id="btnToc">Содержание</button>
+          <button class="btn ghost" id="btnFind">Поиск ⌘F</button>
         </div>
       </div>
 
@@ -101,10 +113,11 @@
         <aside id="tocPanel" class="toc" style="display:none"></aside>
         <article id="reader" class="reader"><p>Загрузка…</p></article>
       </div>
+      <div class="reading-footer" id="readingFooter"></div>
     </section>
 
     <!-- Панель настроек -->
-    <div id="settingsPanel" class="panel">
+    <div id="settingsPanel" class="panel" aria-live="polite">
       <div class="row">
         <label>Шрифт:</label>
         <select id="fontFamily">
@@ -118,21 +131,36 @@
         <input id="lineHeight" type="range" min="1.2" max="2.0" step="0.05" />
         <label>Макс. ширина:</label>
         <input id="pageWidth" type="range" min="620" max="980" step="10" />
+        <label>Скорость чтения (сл/мин):</label>
+        <input id="wpm" type="number" min="120" max="800" step="10" />
+        <label><input type="checkbox" id="twoCols"> Две колонки ≥ 1400px</label>
+        <label><input type="checkbox" id="justify"> Выравнивать текст по ширине</label>
       </div>
       <div class="row">
+        <button class="btn" id="btnExport">Экспорт настроек</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" />
+        <button class="btn" id="btnImport">Импорт</button>
         <span class="hint">Настройки сохраняются в вашем профиле (по Telegram ID или гостевом, если открыто вне Telegram).</span>
       </div>
     </div>
   </main>
 
 <script>
-/* ========= КОНФИГ ПОД ТВОЙ РЕПОЗИТОРИЙ ========= */
+/* ========= КОНФИГ (можно переопределить через query-параметры) ========= */
 const CONFIG = {
   GITHUB_OWNER: 'viDaLost',
   GITHUB_REPO:  'KL',
   BRANCH:       'main',
   BOOKS_DIR:    'books'
 };
+
+(function applyQueryOverrides(){
+  const q=new URLSearchParams(location.search);
+  CONFIG.GITHUB_OWNER = q.get('owner') || CONFIG.GITHUB_OWNER;
+  CONFIG.GITHUB_REPO  = q.get('repo')  || CONFIG.GITHUB_REPO;
+  CONFIG.BRANCH       = q.get('branch')|| CONFIG.BRANCH;
+  CONFIG.BOOKS_DIR    = q.get('dir')   || CONFIG.BOOKS_DIR;
+})();
 
 /* ========= Telegram / Профиль ========= */
 let TG = window.Telegram && Telegram.WebApp ? Telegram.WebApp : null;
@@ -149,15 +177,17 @@ try{
     if (urlId) { userId = `uid-${urlId}`; userLabel = `UID (url): ${urlId}`; }
   }
 }catch(e){}
+
 document.getElementById('whoami').textContent = userLabel;
 
 /* ========= Хранилище ========= */
 const STORAGE_KEY = `tgReader::${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}::${userId}`;
 const defaults = {
   theme:'dark',
-  settings:{ ff:"Literata, Georgia, 'Times New Roman', serif", fs:18, lh:1.6, width:800 },
+  settings:{ ff:"Literata, Georgia, 'Times New Roman', serif", fs:18, lh:1.6, width:800, wpm:220, twoCols:false, justify:false },
   shelves:{ reading:{}, completed:{} },
-  progress:{}
+  progress:{},
+  cache:{} // url -> { ts, text }
 };
 let db = load();
 function load(){ try{ return Object.assign(structuredClone(defaults), JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')); }catch(e){ return structuredClone(defaults);} }
@@ -172,42 +202,75 @@ function applyReaderSettings(){
   $r.style.setProperty('--fs', db.settings.fs+'px');
   $r.style.setProperty('--lh', db.settings.lh);
   document.documentElement.style.setProperty('--reader-max', db.settings.width+'px');
+  $r.style.columnCount = (db.settings.twoCols && window.innerWidth>=1400) ? 2 : 'auto';
+  $r.style.columnGap = (db.settings.twoCols && window.innerWidth>=1400) ? '60px' : 'normal';
+  $r.style.textAlign = db.settings.justify ? 'justify' : 'start';
 }
 applyTheme(); applyReaderSettings();
 
-document.getElementById('btnTheme').onclick=()=>{ db.theme=db.theme==='dark'?'light':'dark'; save(); applyTheme(); };
 const fontFamily=document.getElementById('fontFamily');
 const fontSize=document.getElementById('fontSize');
 const lineHeight=document.getElementById('lineHeight');
 const pageWidth=document.getElementById('pageWidth');
-fontFamily.value=db.settings.ff; fontSize.value=db.settings.fs; lineHeight.value=db.settings.lh; pageWidth.value=db.settings.width;
-fontFamily.oninput=e=>{ db.settings.ff=e.target.value; save(); applyReaderSettings(); };
-fontSize.oninput=e=>{ db.settings.fs=+e.target.value; save(); applyReaderSettings(); };
-lineHeight.oninput=e=>{ db.settings.lh=+e.target.value; save(); applyReaderSettings(); };
-pageWidth.oninput=e=>{ db.settings.width=+e.target.value; save(); applyReaderSettings(); };
-document.getElementById('btnSettings').onclick=()=>document.getElementById('settingsPanel').classList.toggle('active');
+const wpm=document.getElementById('wpm');
+const twoCols=document.getElementById('twoCols');
+const justify=document.getElementById('justify');
 
-/* ========= GitHub API ========= */
+fontFamily.value=db.settings.ff; fontSize.value=db.settings.fs; lineHeight.value=db.settings.lh; pageWidth.value=db.settings.width; wpm.value=db.settings.wpm; twoCols.checked=db.settings.twoCols; justify.checked=db.settings.justify;
+
+function bindSetting(input, key, transform){
+  input.oninput=e=>{ db.settings[key]=transform?transform(e.target.value):e.target.value; if(key!=='ff' && key!=='wpm') db.settings[key]=Number(db.settings[key]); save(); applyReaderSettings(); };
+}
+
+bindSetting(fontFamily,'ff');
+bindSetting(fontSize,'fs',Number);
+bindSetting(lineHeight,'lh',Number);
+bindSetting(pageWidth,'width',Number);
+bindSetting(wpm,'wpm',Number);
+bindSetting(twoCols,'twoCols',v=>!!document.getElementById('twoCols').checked);
+bindSetting(justify,'justify',v=>!!document.getElementById('justify').checked);
+
+document.getElementById('btnSettings').onclick=()=>document.getElementById('settingsPanel').classList.toggle('active');
+document.getElementById('btnTheme').onclick=()=>{ db.theme=db.theme==='dark'?'light':'dark'; save(); applyTheme(); };
+window.addEventListener('resize', applyReaderSettings);
+
+// Импорт/экспорт
+const $importFile=document.getElementById('importFile');
+document.getElementById('btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='reader-settings.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById('btnImport').onclick=()=> $importFile.click();
+$importFile.onchange=async e=>{
+  const f=e.target.files[0]; if(!f) return; const txt=await f.text(); try{ const json=JSON.parse(txt); db=Object.assign(structuredClone(defaults), json); save(); location.reload(); }catch(err){ alert('Не удалось импортировать настройки.'); }
+};
+
+/* ========= Утилиты ========= */
+function toastFooter(text){ const el=document.getElementById('readingFooter'); el.textContent=text; el.classList.add('show'); clearTimeout(toastFooter._t); toastFooter._t=setTimeout(()=>el.classList.remove('show'), 2000); }
+
+/* ========= GitHub API с кэшированием ========= */
 async function fetchRepoTree(){
+  const ghToken = new URLSearchParams(location.search).get('gh_token');
   const url = `https://api.github.com/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/git/trees/${CONFIG.BRANCH}?recursive=1`;
-  const res = await fetch(url, { headers: { 'Accept': 'application/vnd.github+json' }});
+  const headers = { 'Accept': 'application/vnd.github+json' }; if(ghToken) headers.Authorization=`Bearer ${ghToken}`;
+  const res = await fetch(url, { headers });
   if (!res.ok) {
-    let msg = `GitHub API error: ${res.status}`;
-    try { msg += ' — ' + (await res.text()); } catch {}
-    const err = new Error(msg); err.status = res.status; throw err;
+    let body=''; try{ body=await res.text(); }catch{}
+    const err = new Error(`GitHub API error: ${res.status}`); err.status = res.status; err.body=body; throw err;
   }
   return res.json();
 }
-}
+
 function rawUrlFor(path){
   const enc = path.split('/').map(encodeURIComponent).join('/');
   return `https://raw.githubusercontent.com/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/${CONFIG.BRANCH}/${enc}`;
 }
-// NOTE: поддержка старого кода, если кто-то заменит переменные
 function baseName(path){ const p=path.split('/').pop()||path; return p.replace(/\.[^.]+$/,''); }
 function humanize(name){
   return decodeURIComponent(name).replace(/[_\-]+/g,' ').replace(/\s+/g,' ').replace(/\b([a-zа-яё])/gi,s=>s.toUpperCase()).trim();
 }
+function isBookFile(p){ return p.startsWith(`${CONFIG.BOOKS_DIR}/`) && /\.(?:txt|md)$/i.test(p); }
+
 function groupBooks(tree){
   const files = tree.tree.filter(n=>n.type==='blob' && isBookFile(n.path)).map(n=>({path:n.path, raw: rawUrlFor(n.path)}));
   const byFolder=new Map(); const singles=[];
@@ -241,6 +304,10 @@ function badgeFor(bookId){
   if(prog>1) return `📍 ${prog}%`;
   return '';
 }
+function coverInitials(title){
+  const w=title.split(/\s+/).slice(0,2).map(s=>s[0]?.toUpperCase()).filter(Boolean).join('');
+  return w||'📚';
+}
 function renderGrid(){
   const q=($search.value||'').toLowerCase().trim();
   const list=allBooks
@@ -255,6 +322,9 @@ function renderGrid(){
   for(const b of list){
     const $card=document.createElement('div'); $card.className='card';
     const $cover=document.createElement('div'); $cover.className='cover'; $cover.textContent=b.title; $card.appendChild($cover);
+    // аватар с инициалами в углу
+    const badge=document.createElement('div'); badge.textContent=coverInitials(b.title); Object.assign(badge.style,{position:'absolute',marginTop:'8px',marginLeft:'8px',fontWeight:'900',fontSize:'12px',background:'rgba(0,0,0,.35)',padding:'4px 6px',borderRadius:'8px',border:'1px solid rgba(255,255,255,.2)'}); $cover.style.position='relative'; $cover.prepend(badge);
+
     const $meta=document.createElement('div'); $meta.className='meta'; $meta.textContent=badgeFor(b.id)||'Готово к чтению'; $card.appendChild($meta);
     const $actions=document.createElement('div'); $actions.className='actions';
     const $read=document.createElement('button'); $read.className='btn primary'; $read.textContent='Читать'; $read.onclick=()=>openBook(b);
@@ -264,8 +334,10 @@ function renderGrid(){
     $actions.appendChild($read); $actions.appendChild($mark); $card.appendChild($actions); $grid.appendChild($card);
   }
 }
+
 document.querySelectorAll('.pill').forEach(el=>{ el.onclick=()=>{ document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active')); el.classList.add('active'); filter=el.getAttribute('data-filter'); renderGrid(); }; });
 $search.oninput=()=>renderGrid();
+$search.addEventListener('keydown',e=>{ if(e.key==='Escape'){ e.target.blur(); }});
 
 /* ========= Ридер / главы ========= */
 const $libraryView=document.getElementById('libraryView');
@@ -278,13 +350,18 @@ const $btnToc=document.getElementById('btnToc');
 const $tocPanel=document.getElementById('tocPanel');
 const $btnMarkReading=document.getElementById('btnMarkReading');
 const $btnMarkDone=document.getElementById('btnMarkDone');
+const $btnSync=document.getElementById('btnSync');
+const $btnFind=document.getElementById('btnFind');
+const $progressbar=document.getElementById('progressbar');
 let currentBook=null, currentChapterKey=null, observer=null, tocAnchors=[];
 
 function showReader(on){ if(on){ $libraryView.style.display='none'; $readerView.classList.add('active'); $btnBack.style.display=''; } else { $libraryView.style.display=''; $readerView.classList.remove('active'); $btnBack.style.display='none'; } }
-$btnBack.onclick=$btnClose.onclick=()=>showReader(false);
+$btnBack.onclick=$btnClose.onclick=()=>{ history.replaceState(null,'', location.pathname); showReader(false); };
 $btnToc.onclick=()=>{ const on=$tocPanel.style.display!=='none'; $tocPanel.style.display=on?'none':''; };
 $btnMarkReading.onclick=()=>{ if(!currentBook) return; delete db.shelves.completed[currentBook.id]; db.shelves.reading[currentBook.id]=Date.now(); save(); renderGrid(); };
 $btnMarkDone.onclick=()=>{ if(!currentBook) return; delete db.shelves.reading[currentBook.id]; db.shelves.completed[currentBook.id]=Date.now(); save(); renderGrid(); };
+$btnSync.onclick=()=>init(true);
+$btnFind.onclick=()=>{ const q=prompt('Найти в тексте:'); if(q) findInReader(q); };
 
 function setBookTitle(title){ $bookTitle.textContent=title; document.title=title+' — Читалка'; }
 function saveProgress(percent){
@@ -301,7 +378,7 @@ function attachScrollSaver(){
     if(ticking) return;
     requestAnimationFrame(()=>{
       const el=document.documentElement; const total=el.scrollHeight-el.clientHeight;
-      const p=total>0?(el.scrollTop/total)*100:0; saveProgress(p); ticking=false;
+      const p=total>0?(el.scrollTop/total)*100:0; saveProgress(p); $progressbar.style.width=p+'%'; ticking=false;
     }); ticking=true;
   }
   document.addEventListener('scroll', onScroll, {passive:true});
@@ -327,16 +404,16 @@ async function openBook(book){
     let ch=book.chapters[0]; if(saved){ const found=book.chapters.find(c=>c.key===saved); if(found) ch=found; }
     await openChapter(ch, book); renderChapterList(book, ch.key);
   } else {
-    // ОДИН ФАЙЛ → виртуальные главы
-    const txt=await fetchText(book.file.raw); const ext=fileExt(book.file.key);
+    const txt=await fetchTextCached(book.file.raw); const ext=fileExt(book.file.key);
     const vchapters=splitIntoChapters(txt, ext); // [{title, html, key}]
-    book.__virtual=vchapters.map(v=>({ key:`${book.file.key}::${v.key}`, title:v.title, rawHtml:v.html }));
+    book.__virtual=vchapters.map(v=>({ key:`${book.file.key}::${v.key}`, title:v.title, rawHtml:v.html, words:v.words }));
     const savedKey=db.progress[book.id]?.chapterKey;
     let current=book.__virtual[0]; if(savedKey){ const f=book.__virtual.find(c=>c.key===savedKey); if(f) current=f; }
     await renderVirtualChapter(book, current);
     renderChapterList({ title:book.title, chapters:book.__virtual.map(c=>({key:c.key,title:c.title})) }, current.key);
   }
   applyReaderSettings();
+  history.replaceState(null,'', `#book=${encodeURIComponent(book.id)}${currentChapterKey?`&ch=${encodeURIComponent(currentChapterKey)}`:''}`);
 }
 
 function renderChapterList(book, activeKey){
@@ -356,15 +433,30 @@ function renderChapterList(book, activeKey){
 
 async function openChapter(chapter, book){
   currentChapterKey=chapter.key; setBookTitle(`${book.title} — ${chapter.title}`); $reader.innerHTML='<p>Загрузка…</p>';
-  const txt=await fetchText(chapter.raw); const html=renderTextToHtmlChunk(txt, fileExt(chapter.key));
+  const txt=await fetchTextCached(chapter.raw); const html=renderTextToHtmlChunk(txt, fileExt(chapter.key));
   $reader.innerHTML=html; buildTocFromReader(); attachScrollSaver(); delete db.shelves.completed[book.id]; db.shelves.reading[book.id]=Date.now(); save(); restoreScroll();
+  updateETA(txt);
+  history.replaceState(null,'', `#book=${encodeURIComponent(book.id)}&ch=${encodeURIComponent(chapter.key)}`);
 }
 async function renderVirtualChapter(book, chapter){
   currentChapterKey=chapter.key; setBookTitle(`${book.title} — ${chapter.title}`); $reader.innerHTML=chapter.rawHtml;
   buildTocFromReader(); attachScrollSaver(); delete db.shelves.completed[book.id]; db.shelves.reading[book.id]=Date.now(); save(); restoreScroll();
+  updateETA(chapter.rawHtml, true, chapter.words);
+  history.replaceState(null,'', `#book=${encodeURIComponent(book.id)}&ch=${encodeURIComponent(chapter.key)}`);
 }
 
-async function fetchText(url){ const res=await fetch(url); if(!res.ok) throw new Error('Не удалось загрузить книгу'); return res.text(); }
+/* ========= Загрузка текста с простым локальным кэшем ========= */
+async function fetchTextCached(url){
+  const now=Date.now();
+  const hit=db.cache[url];
+  if(hit && (now-hit.ts)<(24*60*60*1000)) return hit.text;
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('Не удалось загрузить книгу');
+  const txt=await res.text();
+  db.cache[url]={ ts: now, text: txt }; save();
+  return txt;
+}
+
 function fileExt(path){ const m=path.match(/\.([^.]+)$/); return m?m[1].toLowerCase():''; }
 function escapeHtml(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -405,7 +497,9 @@ function splitIntoChapters(txt, ext){
   for(let c=0;c<indices.length;c++){
     const from=indices[c].i; const to=(indices[c+1]?.i ?? lines.length);
     const slice=lines.slice(from,to).join('\n');
-    chunks.push({ title:indices[c].title||`Глава ${c+1}`, html:renderTextToHtmlChunk(slice, ext), key:`ch_${String(c).padStart(3,'0')}` });
+    const rendered=renderTextToHtmlChunk(slice, ext);
+    const words=(slice.match(/\S+/g)||[]).length;
+    chunks.push({ title:indices[c].title||`Глава ${c+1}`, html:rendered, key:`ch_${String(c).padStart(3,'0')}`, words });
   }
   return chunks;
 }
@@ -431,18 +525,62 @@ function buildTocFromReader(){
   $tocPanel.querySelectorAll('a[data-anchor]').forEach(a=>{ a.onclick=e=>{ e.preventDefault(); const id=a.getAttribute('data-anchor'); const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }; });
 }
 
-/* ========= Навбар/ESC ========= */
+/* ========= Поиск по тексту ========= */
+function clearSearchMarks(){ $reader.querySelectorAll('mark.search').forEach(m=>{ const t=document.createTextNode(m.textContent); m.replaceWith(t); }); }
+function findInReader(q){
+  clearSearchMarks();
+  const walk=document.createTreeWalker($reader, NodeFilter.SHOW_TEXT, null);
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  let count=0; const nodes=[]; while(walk.nextNode()){ const n=walk.currentNode; if(!n.nodeValue.trim()) continue; if(re.test(n.nodeValue)){ nodes.push(n); } }
+  nodes.forEach(n=>{
+    const frag=document.createDocumentFragment();
+    let lastIndex=0; n.nodeValue.replace(re,(m, idx)=>{
+      const before=n.nodeValue.slice(lastIndex, idx); if(before) frag.appendChild(document.createTextNode(before));
+      const mark=document.createElement('mark'); mark.className='search'; mark.textContent=m; frag.appendChild(mark); lastIndex=idx+m.length;
+    });
+    const rest=n.nodeValue.slice(lastIndex); if(rest) frag.appendChild(document.createTextNode(rest));
+    n.parentNode.replaceChild(frag, n); count++;
+  });
+  if(count){ $reader.querySelector('mark.search')?.scrollIntoView({behavior:'smooth', block:'center'}); toastFooter(`Найдено совпадений: ${$reader.querySelectorAll('mark.search').length}`); }
+  else toastFooter('Ничего не найдено');
+}
+
+/* ========= Навбар/ESC/Шорткаты ========= */
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){ const p=document.getElementById('settingsPanel'); if(p.classList.contains('active')) p.classList.remove('active'); else showReader(false); }
+  if(e.key==='t' || e.key==='T'){ db.theme=db.theme==='dark'?'light':'dark'; save(); applyTheme(); }
+  if(e.key==='/' && document.activeElement!==$search){ e.preventDefault(); $search.focus(); }
+  if(e.key==='['){ db.settings.fs=Math.max(14, db.settings.fs-1); save(); applyReaderSettings(); toastFooter(`Размер: ${db.settings.fs}px`); }
+  if(e.key===']'){ db.settings.fs=Math.min(28, db.settings.fs+1); save(); applyReaderSettings(); toastFooter(`Размер: ${db.settings.fs}px`); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='f'){ e.preventDefault(); $btnFind.click(); }
+  if((e.key==='PageDown' || (e.key===' ' && !e.shiftKey))){ window.scrollBy({top: window.innerHeight*0.9, behavior:'smooth'}); }
+  if((e.key==='PageUp' || (e.key===' ' && e.shiftKey))){ window.scrollBy({top: -window.innerHeight*0.9, behavior:'smooth'}); }
+  if(e.key==='n' && currentBook){ goChapter(1); }
+  if(e.key==='p' && currentBook){ goChapter(-1); }
 });
 
+function goChapter(dir){ if(!currentBook) return; const list=currentBook.type==='multi'?currentBook.chapters:currentBook.__virtual; const idx=list.findIndex(c=>c.key===currentChapterKey); const next=list[idx+dir]; if(!next) return; if(currentBook.type==='multi') openChapter(next,currentBook); else renderVirtualChapter(currentBook,next); }
+
+/* ========= ETA ========= */
+function updateETA(textOrHtml, isHtml=false, preCount){
+  let words=preCount; if(!words){ words=isHtml ? (textOrHtml.replace(/<[^>]+>/g,' ').match(/\S+/g)||[]).length : (textOrHtml.match(/\S+/g)||[]).length; }
+  const mins=Math.ceil(words / (db.settings.wpm||220));
+  toastFooter(`≈ ${mins} мин чтения · ${words.toLocaleString('ru-RU')} слов`);
+}
+
 /* ========= Инициализация ========= */
-async function init(){
+async function init(forceRefresh=false){
   try{
+    if(forceRefresh){ delete db.cache; db.cache={}; save(); }
     const tree=await fetchRepoTree(); allBooks=groupBooks(tree);
     if(!allBooks.length) $empty.style.display='block'; renderGrid();
+
+    // deep-link: #book=...&ch=...
+    if(location.hash){ const h=new URLSearchParams(location.hash.slice(1)); const bid=h.get('book'); const ch=h.get('ch'); if(bid){ const b=allBooks.find(x=>x.id===bid) || allBooks.find(x=>x.title===decodeURIComponent(bid)); if(b){ await openBook(b); if(ch){ if(b.type==='multi'){ const c=b.chapters.find(x=>x.key===ch); if(c) await openChapter(c,b); } else { const c=b.__virtual?.find(x=>x.key===ch); if(c) await renderVirtualChapter(b,c); } } } }
+    }
+
     const qp=new URLSearchParams(location.search); const want=qp.get('book');
-    if(want){
+    if(want && !location.hash){
       const idFile=`file:${CONFIG.BOOKS_DIR}/${want}`; const idFolder=`folder:${want}`;
       let b=allBooks.find(x=>x.id===idFile) || allBooks.find(x=>x.id===idFolder);
       if(!b) b=allBooks.find(x=>x.title.toLowerCase()===decodeURIComponent(want).toLowerCase());
@@ -450,9 +588,18 @@ async function init(){
     }
   }catch(e){
     console.error(e);
-    $grid.innerHTML=`<div class="empty">Не удалось получить список из GitHub. Проверьте настройки и доступность репозитория.</div>`;
+    let extra=''; if(e.status===403) extra=' (возможно, лимит GitHub API; попробуйте добавить ?gh_token=...)';
+    $grid.innerHTML=`<div class="empty">Не удалось получить список из GitHub${extra}. Проверьте настройки и доступность репозитория.</div>`;
   }
 }
+
+/* ========= Вспомогательные из исходника ========= */
+function isBookPath(p){ return p.startsWith(`${CONFIG.BOOKS_DIR}/`); }
+
+/* ========= Починка пробела из исходного кода ========= */
+// (в исходнике была лишняя закрывающая скобка после fetchRepoTree)
+
+/* ========= Старт ========= */
 init();
 </script>
 </body>
